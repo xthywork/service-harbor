@@ -89,3 +89,7 @@ uv 安裝模式使用目前 Python 並禁止自動下載 Python，不要求環�
 ### Overview Disabled 判斷
 
 Needs attention 的連通異常必須確認目前 website_check.method 為 http／tcp，且結果 method 與設定一致。對應服務 Disabled 時，不可將 Open ports 的失敗 TCP 結果重新轉成服務黃燈；systemd Failed／Unavailable 與沒有對應服務的獨立 Port 提醒仍保留。
+
+### Services Failed 分類
+
+Services 的 Failed 摘要與篩選同時包含 API Failed／Unavailable；serviceFailed、serviceStatusLabel 與 statusClass 保持一致，Unavailable 在 Services 顯示 Failed 紅燈。底層 API 狀態與錯誤文字不改寫，controllable=false 仍須停用控制。原 Unavailable 選項作為 Failed 的診斷子篩選保留；不可把 HTTP／TCP 檢查失敗全部混入 Failed。

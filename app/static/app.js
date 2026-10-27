@@ -292,7 +292,7 @@
   function renderSummary() {
     const running = state.services.filter(service => service.status === "Running").length;
     const stopped = state.services.filter(service => service.status === "Stopped").length;
-    const failed = state.services.filter(service => service.status === "Failed").length;
+    const failed = state.services.filter(serviceFailed).length;
     const unavailable = state.services.filter(service => service.status === "Unavailable").length;
     $("#count-total").textContent = state.services.length;
     $("#count-running").textContent = running;
@@ -300,7 +300,7 @@
     $("#count-failed").textContent = failed;
     $("#count-connectivity").textContent = state.services.filter(connectivityFailed).length;
     $("#nav-service-count").textContent = state.services.length;
-    $("#failed-foot").textContent = failed || unavailable ? `${failed} failed · ${unavailable} unavailable` : "No failed or unavailable units";
+    $("#failed-foot").textContent = failed || unavailable ? `${failed - unavailable} unit failed · ${unavailable} host / unit unavailable` : "No failed or unavailable units";
   }
 
   function currentFilters(page = "overview") {
@@ -317,20 +317,22 @@
       const portText = service.configured_port || "";
       const hostFilter = page === "services" ? $("#service-host-filter").value : "all";
       return (hostFilter === "all" || (service.host_id || (service.scope === "external" ? "external" : "local")) === hostFilter)
-        && (status === "all" || (status === "Connectivity" ? connectivityFailed(service) : service.status === status))
+        && (status === "all" || (status === "Connectivity" ? connectivityFailed(service) : status === "Failed" ? serviceFailed(service) : service.status === status))
         && (category === "all" || service.category === category)
         && (activeScope === "all" || (activeScope === "favorites" ? service.favorite : service.scope === activeScope))
         && (!search || `${displayName(service)} ${service.name} ${service.description} ${service.id} ${service.unit || ""} ${service.host_name || ""} ${portText}`.toLowerCase().includes(search));
     });
   }
 
-  function statusClass(status) { return status === "Running" ? "status-running" : status === "Failed" ? "status-failed" : status === "Unavailable" ? "status-unavailable" : status === "Linked" ? "status-linked" : "status-stopped"; }
+  function serviceFailed(service) { return ["Failed", "Unavailable"].includes(service.status); }
+  function serviceStatusLabel(service) { return serviceFailed(service) ? "Failed" : service.status; }
+  function statusClass(status) { return status === "Running" ? "status-running" : ["Failed", "Unavailable"].includes(status) ? "status-failed" : status === "Linked" ? "status-linked" : "status-stopped"; }
   function connectivityFailed(service) { return service.website_result?.status === "Stopped"; }
   function serviceLightClass(service) {
     return connectivityFailed(service) && (!isManaged(service) || service.status === "Running") ? "status-warning" : statusClass(service.status);
   }
   function serviceLightLabel(service) {
-    return `${service.status}${connectivityFailed(service) ? ` · ${service.website_result.method.toUpperCase()} unreachable` : ""}`;
+    return `${serviceStatusLabel(service)}${service.status === "Unavailable" ? " · Host or unit unavailable" : ""}${connectivityFailed(service) ? ` · ${service.website_result.method.toUpperCase()} unreachable` : ""}`;
   }
   function connectivityBadge(service, withTime = false) {
     const result = service.website_result;
@@ -556,7 +558,7 @@
   }
 
   function drawerMeta(service) {
-    return `<span class="status-badge ${statusClass(service.status)}">${esc(service.status)}</span>${service.configured_port ? `<span class="port-tag">PORT ${service.configured_port}</span>` : ""}${connectivityBadge(service, true)}`;
+    return `<span class="status-badge ${statusClass(service.status)}" title="${esc(service.status === "Unavailable" ? service.error || "Host or unit unavailable" : service.status)}">${esc(serviceStatusLabel(service))}</span>${service.configured_port ? `<span class="port-tag">PORT ${service.configured_port}</span>` : ""}${connectivityBadge(service, true)}`;
   }
 
   function updateFavoriteButton(service) {

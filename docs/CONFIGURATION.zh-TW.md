@@ -158,3 +158,7 @@ Services／新增服務頁刷新時，Port inventory API 使用 `probe=false`，
 ### Disabled 與 Overview 提醒
 
 Check method 為 Disabled（含舊資料未設定 method）時，Overview 的 Needs attention 不採用該服務的歷史連通結果，也不把對應 Open ports 的 TCP 失敗列為服務異常。systemd Failed／Unavailable 仍會列出；沒有對應服務的獨立 Port 異常仍可提醒。Open ports 的獨立 TCP inventory 與其檢查結果維持原有行為，Disabled 只停用服務的連通檢查與相關提醒。
+
+### Services 的 Failed 分類
+
+Services 將 API 的 Failed 與 Unavailable 都歸入 Failed 摘要、紅燈與快速篩選。Unavailable 包含主機離線、SSH 失敗、unit 無法讀取等情況；卡片／詳情仍保留原始原因，並有 Failed · Host / unit unavailable 子篩選。這是顯示分類，不會將底層 systemd 狀態改寫成 failed，也不會繞過控管：無法查詢時啟停按鈕仍停用。HTTP／TCP 連通問題仍使用原有 Connectivity issues 分類與黃燈；Overview 的診斷分類保留 Failed／Unavailable 區別。
